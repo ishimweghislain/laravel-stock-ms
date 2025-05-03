@@ -12,38 +12,53 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        
+        // Simple count for total products
         $totalProducts = Product::count();
-
-       
-        $totalStock = ProductIn::sum('quantity') - ProductOut::sum('quantity');
-
         
-        $totalValue = DB::selectOne('
-            SELECT SUM(net_quantity * avg_unit_price) as total_value
-            FROM (
-                SELECT 
-                    pi.productid,
-                    (SUM(pi.quantity) - COALESCE(SUM(po.quantity), 0)) as net_quantity,
-                    AVG(pi.unit_price) as avg_unit_price
-                FROM productin pi
-                LEFT JOIN productout po ON pi.productid = po.productid
-                GROUP BY pi.productid
-                HAVING net_quantity > 0
-            ) as stock
-        ')->total_value ?? 0;
-
+        // Simple calculation for total stock
+        $totalStock = ProductIn::sum('quantity') - ProductOut::sum('quantity');
+        
+        // Calculate total inventory value using a simpler query
+        $inventory = DB::table('productin as pi')
+            ->select('pi.productid', 
+                     DB::raw('SUM(pi.quantity) as total_in'), 
+                     DB::raw('AVG(pi.unit_price) as avg_price'))
+            ->groupBy('pi.productid')
+            ->get();
+            
+        $outQuantities = DB::table('productout')
+            ->select('productid', DB::raw('SUM(quantity) as total_out'))
+            ->groupBy('productid')
+            ->pluck('total_out', 'productid')
+            ->toArray();
+            
+        $totalValue = 0;
+        foreach ($inventory as $item) {
+            $outQty = $outQuantities[$item->productid] ?? 0;
+            $netQty = $item->total_in - $outQty;
+            if ($netQty > 0) {
+                $totalValue += $netQty * $item->avg_price;
+            }
+        }
+        
+        // Get recent product entries - simple with eager loading
         $recentProductIn = ProductIn::with('product')
-                            ->orderBy('created_at', 'desc')
-                            ->take(5)
-                            ->get();
-
-        // Recent ProductOut records
+            ->latest()
+            ->take(5)
+            ->get();
+            
+        // Get recent product exits - simple with eager loading
         $recentProductOut = ProductOut::with('product')
-                            ->orderBy('created_at', 'desc')
-                            ->take(5)
-                            ->get();
-
-        return view('dashboard', compact('totalProducts', 'totalStock', 'totalValue', 'recentProductIn', 'recentProductOut'));
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        return view('dashboard', compact(
+            'totalProducts', 
+            'totalStock', 
+            'totalValue', 
+            'recentProductIn', 
+            'recentProductOut'
+        ));
     }
 }
