@@ -67,6 +67,32 @@
     .section-header h2 {
         margin: 0;
     }
+    .low-stock {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .search-filter {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .search-filter input {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    .search-filter button {
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .search-filter button:hover {
+        background-color: #0069d9;
+    }
 </style>
 
 <div class="container">
@@ -83,10 +109,47 @@
             <h3>Total Stock</h3>
             <p>{{ number_format($totalStock, 0) }}</p>
         </div>
-        <div class="stat-card">
-            <h3>Total Value</h3>
-            <p>${{ number_format($totalValue, 2) }}</p>
+    </div>
+
+    <div class="table-container">
+        <div class="section-header">
+            <h2>Filter by Date</h2>
         </div>
+        <div class="search-filter">
+            <form action="{{ route('dashboard') }}" method="GET" style="display: flex; gap: 10px; width: 100%;">
+                <input type="date" name="start_date" class="form-input" value="{{ $startDate ?? '' }}">
+                <input type="date" name="end_date" class="form-input" value="{{ $endDate ?? '' }}">
+                <button type="submit" class="btn">Filter</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="section-header">
+            <h2>Product Stock</h2>
+        </div>
+        <table id="productTable">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Unit</th>
+                    <th>Current Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($productStock as $product)
+                <tr class="{{ $product->current_stock <= 5 ? 'low-stock' : '' }}">
+                    <td>{{ $product->pname }}</td>
+                    <td>{{ $product->unit }}</td>
+                    <td>{{ number_format($product->current_stock, 0) }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="3">No products found</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <div class="table-container">

@@ -85,9 +85,9 @@
             @method('PUT')
             <div class="form-group">
                 <label class="form-label">Product</label>
-                <select name="productid" class="form-input" required>
+                <select name="productid" class="form-input" Possession
                     @foreach($products as $product)
-                        <option value="{{ $product->productid }}" 
+                        <option value="{{ $product->productid }}"
                                 {{ old('productid', $productin->productid) == $product->productid ? 'selected' : '' }}>
                             {{ $product->pname }}
                         </option>
@@ -97,22 +97,22 @@
 
             <div class="form-group">
                 <label class="form-label">Date</label>
-                <input type="date" name="date" class="form-input" 
-                       value="{{ old('date', $productin->date->format('Y-m-d')) }}" required>
+                <input type="date" name="date" class="form-input"
+                        value="{{ old('date', $productin->date->format('Y-m-d')) }}" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Quantity</label>
-                <input type="number" name="quantity" class="form-input" 
-                       value="{{ old('quantity', $productin->quantity) }}" 
-                       min="1" required>
+                <input type="number" name="quantity" class="form-input"
+                        value="{{ old('quantity', $productin->quantity) }}"
+                        min="1" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Unit Price</label>
-                <input type="number" name="unit_price" class="form-input" 
-                       value="{{ old('unit_price', $productin->unit_price) }}" 
-                       min="0" step="0.01" required>
+                <input type="number" name="unit_price" class="form-input"
+                        value="{{ old('unit_price', $productin->unit_price) }}"
+                        min="0" step="0.01" required>
             </div>
 
             <div class="button-group">

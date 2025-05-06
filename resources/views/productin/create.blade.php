@@ -101,14 +101,14 @@
 
             <div class="form-group">
                 <label class="form-label">Quantity</label>
-                <input type="number" name="quantity" class="form-input" value="{{ old('quantity') }}" 
-                       min="1" required>
+                <input type="number" name="quantity" class="form-input" value="{{ old('quantity') }}"
+                        min="1" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Unit Price</label>
-                <input type="number" name="unit_price" class="form-input" value="{{ old('unit_price') }}" 
-                       min="0" step="0.01" required>
+                <input type="number" name="unit_price" class="form-input" value="{{ old('unit_price') }}"
+                        min="0" step="0.01" required>
             </div>
 
             <div class="button-group">

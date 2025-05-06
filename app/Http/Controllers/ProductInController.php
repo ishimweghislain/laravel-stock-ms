@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -26,36 +25,49 @@ class ProductInController extends Controller
     {
         $validated = $request->validate([
             'productid' => 'required|exists:products,productid',
-            'date' => 'required|date',
+            'date' => 'required|date:|before_or_equal:today',
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
         ]);
 
-        $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
+        // Check if a ProductIn record exists for the given productid
+        $productin = ProductIn::where('productid', $validated['productid'])->first();
 
-        ProductIn::create($validated);
+        if ($productin) {
+            // Sum the new quantity with the existing quantity
+            $newQuantity = $productin->quantity + $validated['quantity'];
+            // Update existing record with summed quantity, new date, new unit_price, and recalculated total_price
+            $productin->update([
+                'date' => $validated['date'],
+                'quantity' => $newQuantity,
+                'unit_price' => $validated['unit_price'],
+                'total_price' => $newQuantity * $validated['unit_price'],
+            ]);
+        } else {
+            // Create new record with validated data
+            $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
+            ProductIn::create($validated);
+        }
+
         return redirect()->route('productin.index')
             ->with('success', 'Product stock added successfully');
     }
 
-    public function edit($id)
+    public function edit(ProductIn $productin)
     {
-        $productin = ProductIn::findOrFail($id);
         $products = Product::all();
         return view('productin.edit', compact('productin', 'products'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, ProductIn $productin)
     {
         $validated = $request->validate([
             'productid' => 'required|exists:products,productid',
-            'date' => 'required|date',
+            'date' => 'required|date|before_or_equal:today',
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
         ]);
 
-        $productin = ProductIn::findOrFail($id);
-        
         // Check if unit_price is being changed
         if ($validated['unit_price'] != $productin->unit_price) {
             return back()->withErrors(['unit_price' => 'Editing the unit price is not allowed to prevent system misuse.'])
@@ -76,9 +88,8 @@ class ProductInController extends Controller
             ->with('success', 'Product stock updated successfully');
     }
 
-    public function destroy($id)
+    public function destroy(ProductIn $productin)
     {
-        $productin = ProductIn::findOrFail($id);
         $productin->delete();
 
         return redirect()->route('productin.index')
