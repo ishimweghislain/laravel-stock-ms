@@ -18,16 +18,19 @@ class ProductOutController extends Controller
 
     public function create()
     {
-        // Get products with available stock
-        $products = Product::whereRaw('
-            (SELECT COALESCE(SUM(quantity), 0) FROM productin WHERE productin.productid = products.productid) >
-            (SELECT COALESCE(SUM(quantity), 0) FROM productout WHERE productout.productid = products.productid)
-        ')
-        ->get();
+        // Get all products
+        $allProducts = Product::all();
+        
+        // Filter products with available stock
+        $products = $allProducts->filter(function($product) {
+            $totalIn = ProductIn::where('productid', $product->productid)->sum('quantity') ?? 0;
+            $totalOut = ProductOut::where('productid', $product->productid)->sum('quantity') ?? 0;
+            
+            return $totalIn > $totalOut;
+        });
         
         return view('productout.create', compact('products'));
     }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -36,21 +39,21 @@ class ProductOutController extends Controller
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
         ]);
-
+        
         // Check available stock
         $totalIn = ProductIn::where('productid', $validated['productid'])->sum('quantity');
         $totalOut = ProductOut::where('productid', $validated['productid'])->sum('quantity');
         $availableQuantity = $totalIn - $totalOut;
-
+        
         if ($validated['quantity'] > $availableQuantity) {
             return back()->withErrors(['quantity' => 'Not enough stock available'])
                 ->withInput();
         }
-
+        
         // Calculate average unit_price from ProductIn
         $averageInPrice = ProductIn::where('productid', $validated['productid'])
             ->avg('unit_price') ?? 0;
-
+        
         // Check for potential loss
         if ($validated['unit_price'] < $averageInPrice) {
             $warning = sprintf(
@@ -60,25 +63,10 @@ class ProductOutController extends Controller
             );
             session()->flash('warning', $warning);
         }
-
-        // Check if a ProductOut record exists for the given productid
-        $productout = ProductOut::where('productid', $validated['productid'])->first();
-
-        if ($productout) {
-            // Sum the new quantity with the existing quantity
-            $newQuantity = $productout->quantity + $validated['quantity'];
-            // Update existing record with summed quantity, new date, new unit_price, and recalculated total_price
-            $productout->update([
-                'date' => $validated['date'],
-                'quantity' => $newQuantity,
-                'unit_price' => $validated['unit_price'],
-                'total_price' => $newQuantity * $validated['unit_price'],
-            ]);
-        } else {
-            // Create new record with validated data
-            $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
-            ProductOut::create($validated);
-        }
+        
+        // Always create a new record with validated data
+        $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
+        ProductOut::create($validated);
         
         return redirect()->route('productout.index')
             ->with('success', 'Product stock out recorded successfully');
@@ -98,23 +86,23 @@ class ProductOutController extends Controller
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
         ]);
-
+        
         // Check available stock
         $totalIn = ProductIn::where('productid', $validated['productid'])->sum('quantity');
         $totalOut = ProductOut::where('productid', $validated['productid'])
                         ->where('outid', '!=', $productout->outid)
                         ->sum('quantity');
         $availableQuantity = $totalIn - $totalOut;
-
+        
         if ($validated['quantity'] > $availableQuantity) {
             return back()->withErrors(['quantity' => 'Not enough stock available'])
                 ->withInput();
         }
-
+        
         // Calculate average unit_price from ProductIn
         $averageInPrice = ProductIn::where('productid', $validated['productid'])
             ->avg('unit_price') ?? 0;
-
+        
         // Check for potential loss
         if ($validated['unit_price'] < $averageInPrice) {
             $warning = sprintf(
@@ -124,15 +112,14 @@ class ProductOutController extends Controller
             );
             session()->flash('warning', $warning);
         }
-
+        
         $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
-
+        
         $productout->update($validated);
         
         return redirect()->route('productout.index')
             ->with('success', 'Product stock out updated successfully');
     }
-
     public function destroy(ProductOut $productout)
     {
         $productout->delete();

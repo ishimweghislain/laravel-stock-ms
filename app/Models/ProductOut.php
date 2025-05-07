@@ -12,6 +12,7 @@ class ProductOut extends Model
     protected $fillable = [
         'productid', 'date', 'quantity', 'unit_price', 'total_price'
     ];
+    
 
     protected $casts = [
         'date' => 'date'
