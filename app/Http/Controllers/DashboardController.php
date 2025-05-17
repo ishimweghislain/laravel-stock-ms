@@ -29,6 +29,10 @@ class DashboardController extends Controller
         // Total stock
         $totalStock = ProductIn::sum('quantity') - ProductOut::sum('quantity');
 
+        // Total money (total price in - total price out)
+        $totalMoneyQuery = ProductIn::sum('total_price') - ProductOut::sum('total_price');
+        $totalMoney = $totalMoneyQuery;
+
         // Recent ProductIn entries (latest 5, filtered by date if valid)
         $recentProductInQuery = ProductIn::with('product')->latest();
         if ($dateFilter) {
@@ -67,6 +71,7 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'totalProducts',
             'totalStock',
+            'totalMoney',
             'recentProductIn',
             'recentProductOut',
             'productStock',

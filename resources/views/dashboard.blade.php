@@ -109,6 +109,10 @@
             <h3>Total Stock</h3>
             <p>{{ number_format($totalStock, 0) }}</p>
         </div>
+        <div class="stat-card">
+            <h3>Total Money</h3>
+            <p>${{ number_format($totalMoney, 2) }}</p>
+        </div>
     </div>
 
     <div class="table-container">
